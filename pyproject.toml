@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "terminal-trove-index"
+version = "1.0.0"
+description = "Static catalog index for Terminal Trove"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+strict = false

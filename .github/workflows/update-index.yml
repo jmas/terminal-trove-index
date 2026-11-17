@@ -1,0 +1,59 @@
+name: update-index
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: terminal-trove-index
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Build index
+        env:
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+        run: |
+          python3 scripts/build_index.py --workers 6 --delay "${INDEX_DELAY:-3.2}"
+
+      - name: Validate index
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("index/trove.json").read_text(encoding="utf-8"))
+          assert data["schema"] == 1
+          assert data["count"] == len(data["tools"]) > 100
+          assert data["categories"] and data["languages"]
+          assert all(tool.get("slug") for tool in data["tools"])
+          assert len(data.get("failures", [])) < 100
+          print(f"{data['count']} tools, {len(data['categories'])} categories")
+          PY
+
+      - name: Commit changes
+        run: |
+          git config user.name "terminal-trove-index"
+          git config user.email "terminal-trove-index@users.noreply.github.com"
+          git add index/trove.json index/trove.json.gz
+          if git diff --cached --quiet; then
+            echo "index is already current"
+            exit 0
+          fi
+          git commit -m "chore(index): refresh terminal trove catalog"
+          git push
