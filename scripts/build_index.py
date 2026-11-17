@@ -370,7 +370,7 @@ def parse_tool(slug: str, text: str, fallback: dict[str, str]) -> dict[str, Any]
     stars = int(stars_match.group(1).replace(",", "")) if stars_match else 0
 
     release_match = re.search(
-        r'title="Latest release[^"]*">\s*([^<]+?)\s*</div>',
+        r'title="Latest release[^"]*">\s*<div[^>]*>\s*([^<]+?)\s*</div>',
         text,
         re.IGNORECASE | re.DOTALL,
     )
